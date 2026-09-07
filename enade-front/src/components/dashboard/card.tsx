@@ -1,16 +1,12 @@
+import { headers } from 'next/headers';
 import {
     ChartBarIcon,
     ClockIcon,
     ClipboardDocumentCheckIcon,
     XCircleIcon,
 } from '@heroicons/react/24/outline';
-
-const mockCardData = {
-    simuladosRealizados: 5,
-    simuladosPendentes: 2,
-    mediaAcertos: 74.6,
-    tempoMedio: 32, // minutos
-};
+import { auth } from '@/lib/auth';
+import { getDashboardStats } from '@/lib/dashboard';
 
 const iconMap = {
     simulados: ClipboardDocumentCheckIcon,
@@ -19,30 +15,38 @@ const iconMap = {
     tempo: ClockIcon,
 };
 
-export default function CardWrapper() {
+export default async function CardWrapper() {
+    const session = await auth.api.getSession({ headers: await headers() });
+
+    if (!session) {
+        return null;
+    }
+
+    const stats = await getDashboardStats(session.user.id);
+
     return (
         <>
             <Card
                 title="Simulados Realizados"
-                value={mockCardData.simuladosRealizados}
+                value={stats.simuladosRealizados}
                 type="simulados"
             />
 
             <Card
                 title="Simulados Pendentes"
-                value={mockCardData.simuladosPendentes}
+                value={stats.simuladosPendentes}
                 type="pendentes"
             />
 
             <Card
                 title="Média de Acertos"
-                value={`${mockCardData.mediaAcertos}%`}
+                value={`${stats.mediaAcertos}%`}
                 type="performance"
             />
 
             <Card
                 title="Tempo Médio"
-                value={`${mockCardData.tempoMedio} min`}
+                value={`${stats.tempoMedio} min`}
                 type="tempo"
             />
         </>

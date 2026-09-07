@@ -1,129 +1,136 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import QuestionCard from '@/components/simulado/questoes-card';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import QuestionCard from '@/components/simulado/questoes-card';
+import { fetchQuestoes, fetchSimuladoDetail, submitRespostas } from '@/lib/api';
+import type { QuestaoForClient } from '@/lib/api';
 
-export default function ProvaPage({ params }: { params: { id: string } }) {
-    const router = useRouter();
+export default function ProvaPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
+  const [simulado, setSimulado] = useState<any | null>(null);
+  const [simuladoQuestoes, setSimuladoQuestoes] = useState<QuestaoForClient[]>([]);
+  const [respostas, setRespostas] = useState<Record<string, number>>({});
+  const [tempo, setTempo] = useState(0);
+  const [initialTempo, setInitialTempo] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-    const questoes = [
-        {
-            id: 'q1',
-            simuladoId: '1',
-            pergunta: 'O que é Scrum?',
-            alternativas: [
-                'Uma linguagem',
-                'Framework ágil',
-                'Banco de dados',
-                'Sistema operacional',
-            ],
-            correta: 1,
-        },
-        {
-            id: 'q2',
-            simuladoId: '1',
-            pergunta: 'O que é chave primária?',
-            alternativas: [
-                'Senha',
-                'Campo duplicado',
-                'Identificador único',
-                'Índice opcional',
-            ],
-            correta: 2,
-        },
-    ];
+  useEffect(() => {
+    let active = true;
 
-    const simuladoQuestoes = questoes.filter(
-        (q) => q.simuladoId === params.id
-    );
+    params.then(async (result) => {
+      if (!active) return;
+      setResolvedParams(result);
 
-    const [respostas, setRespostas] = useState<{ [key: string]: number }>({});
-    const [tempo, setTempo] = useState(600);
+      try {
+        const [simuladoData, questoesData] = await Promise.all([
+          fetchSimuladoDetail(result.id),
+          fetchQuestoes(result.id),
+        ]);
 
-    // ⏱ Timer
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTempo((t) => (t > 0 ? t - 1 : 0));
-        }, 1000);
+        if (!active) return;
+        setSimulado(simuladoData);
+        setSimuladoQuestoes(questoesData);
 
-        return () => clearInterval(interval);
-    }, []);
+        if (simuladoData) {
+          setTempo(simuladoData.tempo * 60);
+          setInitialTempo(simuladoData.tempo * 60);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    });
 
-    function formatTime(segundos: number) {
-        const min = Math.floor(segundos / 60);
-        const sec = segundos % 60;
-        return `${min}:${sec.toString().padStart(2, '0')}`;
+    return () => {
+      active = false;
+    };
+  }, [params]);
+
+  useEffect(() => {
+    if (tempo <= 0) return;
+    const interval = setInterval(() => {
+      setTempo((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [tempo]);
+
+  const formatTime = (segundos: number) => {
+    const min = Math.floor(segundos / 60);
+    const sec = segundos % 60;
+    return `${min}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const responder = useCallback((id: string, index: number) => {
+    setRespostas((prev) => ({ ...prev, [id]: index }));
+  }, []);
+
+  const finalizar = useCallback(async () => {
+    if (!resolvedParams || !simulado) return;
+
+    const tempoGasto = initialTempo - tempo;
+
+    try {
+      const result = await submitRespostas(resolvedParams.id, respostas, tempoGasto);
+      router.push(`/simulados/${resolvedParams.id}/resultado?score=${result.score}&total=${result.total}`);
+    } catch (error) {
+      console.error(error);
     }
+  }, [resolvedParams, respostas, router, simulado, tempo, initialTempo]);
 
-    function responder(id: string, index: number) {
-        setRespostas((prev) => ({
-            ...prev,
-            [id]: index,
-        }));
+  useEffect(() => {
+    if (tempo === 0 && simuladoQuestoes.length > 0) {
+      void finalizar();
     }
+  }, [finalizar, simuladoQuestoes.length, tempo]);
 
-    function finalizar() {
-        const acertos = simuladoQuestoes.filter(
-            (q) => respostas[q.id] === q.correta
-        ).length;
+  if (loading) {
+    return <p className="p-6">Carregando simulado...</p>;
+  }
 
-        router.push(
-            `/simulados/${params.id}/resultado?score=${acertos}&total=${simuladoQuestoes.length}`
-        );
-    }
+  if (!resolvedParams || !simulado) {
+    return <p className="p-6">Simulado não encontrado</p>;
+  }
 
-    const respondidas = Object.keys(respostas).length;
-    const total = simuladoQuestoes.length;
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="fixed top-0 left-0 w-full bg-white border-b shadow-sm z-50">
+        <div className="max-w-4xl mx-auto flex items-center justify-between p-4">
+          <div className="flex items-center gap-2 rounded-lg bg-red-100 px-3 py-1 text-red-700 font-semibold">
+            ⏱ {formatTime(tempo)}
+          </div>
 
-    return (
-        <div className="min-h-screen bg-gray-100">
+          <div className="text-sm font-medium text-gray-600">
+            {Object.keys(respostas).length} / {simuladoQuestoes.length} respondidas
+          </div>
 
-            {/* 🔥 HEADER FIXO */}
-            <div className="fixed top-0 left-0 w-full bg-white border-b shadow-sm z-50">
-                <div className="max-w-4xl mx-auto flex items-center justify-between p-4">
-
-                    {/* ⏱ Tempo */}
-                    <div className="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-lg font-semibold">
-                        ⏱ {formatTime(tempo)}
-                    </div>
-
-                    {/* 📊 Progresso */}
-                    <div className="text-sm font-medium text-gray-600">
-                        {respondidas} / {total} respondidas
-                    </div>
-
-                    {/* ✅ Finalizar */}
-                    <button
-                        onClick={finalizar}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold shadow-sm transition"
-                    >
-                        Finalizar prova
-                    </button>
-                </div>
-            </div>
-
-            {/* 📄 CONTEÚDO */}
-            <div className="pt-24 pb-10 px-4">
-                <div className="max-w-3xl mx-auto space-y-8">
-
-                    {simuladoQuestoes.map((q, index) => (
-                        <div key={q.id}>
-                            <p className="text-sm text-gray-500 mb-2">
-                                Questão {index + 1}
-                            </p>
-
-                            <QuestionCard
-                                pergunta={q.pergunta}
-                                alternativas={q.alternativas}
-                                selecionada={respostas[q.id]}
-                                onSelect={(i) => responder(q.id, i)}
-                            />
-                        </div>
-                    ))}
-
-                </div>
-            </div>
+          <button
+            onClick={finalizar}
+            className="rounded-xl bg-blue-600 px-5 py-2 text-white font-semibold shadow-sm transition hover:bg-blue-700"
+          >
+            Finalizar prova
+          </button>
         </div>
-    );
+      </div>
+
+      <div className="pt-24 pb-10 px-4">
+        <div className="mx-auto max-w-3xl space-y-8">
+          {simuladoQuestoes.map((q, index) => (
+            <div key={q.id}>
+              <p className="mb-2 text-sm text-gray-500">Questão {index + 1}</p>
+              <QuestionCard
+                pergunta={q.pergunta}
+                alternativas={q.alternativas}
+                selecionada={respostas[q.id]}
+                onSelect={(i) => responder(q.id, i)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

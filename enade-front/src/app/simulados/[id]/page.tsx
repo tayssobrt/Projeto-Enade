@@ -1,111 +1,54 @@
-'use client';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { StartSimuladoButton } from '@/components/simulado/start-button';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-import { useRouter } from 'next/navigation';
+export default async function SimuladoDetalhe({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const session = await auth.api.getSession({ headers: await headers() });
 
-type Props = {
-    params: { id: string };
-};
+  if (!session) {
+    redirect('/');
+  }
 
-type Simulado = {
-    id: string;
-    titulo: string;
-    tema: string;
-    quantidadeQuestoes: number;
-    tempo: number; // em minutos
-};
+  const simulado = await prisma.simulado.findUnique({
+    where: { id: resolvedParams.id },
+  });
 
-export default function SimuladoDetalhe({ params }: Props) {
-    const router = useRouter();
+  if (!simulado) {
+    return <p className="p-6">Simulado não encontrado</p>;
+  }
 
-    // 📚 Mock (depois vira banco)
-    const simulados: Simulado[] = [
-        {
-            id: '1',
-            titulo: 'Simulado ENADE ADS 2026',
-            tema: 'Engenharia de Software',
-            quantidadeQuestoes: 10,
-            tempo: 20,
-        },
-        {
-            id: '2',
-            titulo: 'Banco de Dados - Revisão',
-            tema: 'Banco de Dados',
-            quantidadeQuestoes: 8,
-            tempo: 15,
-        },
-        {
-            id: '3',
-            titulo: 'Redes de Computadores',
-            tema: 'Redes',
-            quantidadeQuestoes: 12,
-            tempo: 25,
-        },
-    ];
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <div className="bg-white rounded-2xl border p-6 shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-900">{simulado.titulo}</h1>
+        <p className="text-gray-500 mt-1">{simulado.tema}</p>
 
-    const simulado = simulados.find((s) => s.id === params.id);
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="rounded-xl bg-gray-50 p-4 text-center">
+            <p className="text-sm text-gray-500">Questões</p>
+            <p className="text-xl font-semibold text-gray-900">{simulado.quantidadeQuestoes}</p>
+          </div>
 
-    if (!simulado) {
-        return <p className="p-6">Simulado não encontrado</p>;
-    }
-
-    function handleStart() {
-        router.push(`/simulados/${simulado?.id}/prova`);
-    }
-
-    return (
-        <div className="p-6 max-w-3xl mx-auto">
-
-            {/* Card principal */}
-            <div className="bg-white rounded-2xl shadow-sm border p-6">
-
-                {/* Título */}
-                <h1 className="text-2xl font-bold text-gray-900">
-                    {simulado.titulo}
-                </h1>
-
-                <p className="text-gray-500 mt-1">
-                    {simulado.tema}
-                </p>
-
-                {/* Infos principais */}
-                <div className="grid grid-cols-2 gap-4 mt-6">
-
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                        <p className="text-sm text-gray-500">Questões</p>
-                        <p className="text-xl font-semibold text-gray-900">
-                            {simulado.quantidadeQuestoes}
-                        </p>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                        <p className="text-sm text-gray-500">Tempo</p>
-                        <p className="text-xl font-semibold text-gray-900">
-                            {simulado.tempo} min
-                        </p>
-                    </div>
-
-                </div>
-
-                {/* Regras */}
-                <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
-                    <p className="font-medium mb-1">Instruções:</p>
-                    <ul className="list-disc ml-4 space-y-1">
-                        <li>Leia cada questão com atenção</li>
-                        <li>Você pode revisar antes de finalizar</li>
-                        <li>O tempo começa ao iniciar</li>
-                    </ul>
-                </div>
-
-                {/* Botão */}
-                <button
-                    onClick={handleStart}
-                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
-                >
-                    Iniciar simulado
-                </button>
-
-            </div>
-
+          <div className="rounded-xl bg-gray-50 p-4 text-center">
+            <p className="text-sm text-gray-500">Tempo</p>
+            <p className="text-xl font-semibold text-gray-900">{simulado.tempoMinutos} min</p>
+          </div>
         </div>
-    );
+
+        <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+          <p className="font-medium mb-1">Instruções:</p>
+          <ul className="list-disc ml-4 space-y-1">
+            <li>Leia cada questão com atenção</li>
+            <li>Você pode revisar antes de finalizar</li>
+            <li>O tempo começa ao iniciar</li>
+          </ul>
+        </div>
+
+        <StartSimuladoButton simuladoId={simulado.id} />
+      </div>
+    </div>
+  );
 }
