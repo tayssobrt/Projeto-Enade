@@ -1,61 +1,36 @@
 package com.ads.enade.service;
 
-import com.ads.enade.dto.UserProfileDTO;
-import com.ads.enade.dto.UserRankingDTO;
-import com.ads.enade.entity.User;
+import com.ads.enade.dto.user.UserProfileDTO;
+import com.ads.enade.entity.Usuario;
 import com.ads.enade.exception.UserNotFoundException;
+import com.ads.enade.mapper.UsuarioMapper;
 import com.ads.enade.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final AuthService authService;
+    private final UsuarioMapper usuarioMapper;
 
-    // Método para atualizar o score do usuário baseado nas respostas corretas
-    public void updateUserScoreAndAttempts(Long userId, int correctAnswers) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Atualiza o score e incrementa as tentativas
-        user.setScore(user.getScore() + (correctAnswers * 10));
-        user.setQuizAttempts(user.getQuizAttempts() + 1);
-
-        userRepository.save(user);
-    }
-
-    // Método para zerar os scores diariamente
-    @Scheduled(cron = "0 0 0 * * ?") // Executa à meia-noite todos os dias
-    public void resetScoresDaily() {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            user.setScore(0); // Zera o score de cada usuário
-        }
-        userRepository.saveAll(users);
-    }
-
-    // Método para obter o ranking de usuários ordenado por score
-    public List<UserRankingDTO> getAllUsersByScore() {
-        List<User> users = userRepository.findAllByOrderByScoreDesc();
-
-        return users.stream()
-                .filter(user -> user.getScore() > 0) // Filtra usuários com score maior que 0
-                .map(user -> new UserRankingDTO(user.getUsername(), user.getScore()))
-                .collect(Collectors.toList());
-    }
 
     // Método para buscar perfil do usuário pelo ID
+    @Transactional
     public UserProfileDTO getUserProfile(Long userId) {
-        User user = userRepository.findById(userId)
+        Usuario usuario = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        return new UserProfileDTO(user.getUsername(), user.getEmail());
+        return usuarioMapper.toDTO(usuario);
     }
 
+    public UserProfileDTO me(){
+
+        Usuario usuario = authService.me();
+
+        return usuarioMapper.toDTO(usuario);
+    }
 }

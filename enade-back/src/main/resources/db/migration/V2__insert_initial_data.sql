@@ -5,7 +5,7 @@ VALUES ('ROLE_ADMIN'),
        ('ROLE_USER');
 
 -- Inserir Cursos (courses)
-INSERT INTO courses (name)
+INSERT INTO curso (nome)
 VALUES ('Administração'),
        ('Análise e Desenvolvimento de Sistemas'),
        ('Arquitetura e Urbanismo'),

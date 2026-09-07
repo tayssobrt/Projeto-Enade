@@ -1,6 +1,6 @@
 package com.ads.enade.security;
 
-import com.ads.enade.entity.User;
+import com.ads.enade.entity.Usuario;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -46,17 +46,17 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserDetailsImpl build(User user) { // Método para construir um objeto UserDetailsImpl a partir de um objeto User
-        List<GrantedAuthority> authorities = user.getRoles().stream() // Cria uma lista de autoridades a partir dos papéis do usuário
+    public static UserDetailsImpl build(Usuario usuario) { // Método para construir um objeto UserDetailsImpl a partir de um objeto User
+        List<GrantedAuthority> authorities = usuario.getRoles().stream() // Cria uma lista de autoridades a partir dos papéis do usuário
                 .map(role -> new SimpleGrantedAuthority(role.getName().name())) // Mapeia cada papel para uma autoridade simples
                 .collect(Collectors.toList()); // Coleta as autoridades em uma lista
 
         return new UserDetailsImpl(
-                user.getId(),
-                user.getUsername(),
-                user.getCourse().getId(),
-                user.getEmail(),
-                user.getPassword(),
+                usuario.getId(),
+                usuario.getUsername(),
+                usuario.getCourse().getId(),
+                usuario.getEmail(),
+                usuario.getPassword(),
                 authorities);
     }
 

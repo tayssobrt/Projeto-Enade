@@ -1,6 +1,6 @@
 package com.ads.enade.security;
 
-import com.ads.enade.entity.User;
+import com.ads.enade.entity.Usuario;
 import com.ads.enade.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +22,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException { // Método para carregar um usuário por nome de usuário
-        User user = userRepository.findByUsername(username)
+        Usuario usuario = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
 
-        return UserDetailsImpl.build(user); // Retorna um objeto UserDetailsImpl construído a partir do usuário encontrado
+        return UserDetailsImpl.build(usuario); // Retorna um objeto UserDetailsImpl construído a partir do usuário encontrado
     }
 
 }
