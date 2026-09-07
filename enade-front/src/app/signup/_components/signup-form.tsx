@@ -10,7 +10,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { authClient } from "@/lib/auth-client"
+
 
 const signupSchema = z
   .object({
@@ -18,6 +18,7 @@ const signupSchema = z
     email: z.string().email({ message: "Email inválido" }),
     password: z.string().min(8, { message: "A senha deve ter pelo menos 8 caracteres" }),
     confirmPassword: z.string().min(8, { message: "A confirmação de senha deve ter pelo menos 8 caracteres" }),
+    course: z.string().min(1, { message: "Selecione um curso" }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem",
@@ -39,30 +40,31 @@ export function SignupForm() {
       email: "",
       password: "",
       confirmPassword: "",
-    },
+      course: "ads",
+    }
   })
 
   async function onSubmit(formData: SignupFormValues) {
-    const { data, error } = await authClient.signUp.email({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      callbackURL: "/dashboard"
-    },
-      {
-        onRequest: (ctx) => {
+    // const { data, error } = await authClient.signUp.email({
+    //   name: formData.name,
+    //   email: formData.email,
+    //   password: formData.password,
+    //   callbackURL: "/dashboard"
+    // },
+    //   {
+    //     onRequest: (ctx) => {
 
-        },
-        onSuccess: (ctx) => {
-          console.log("Cadastrado", ctx)
-          router.replace("/dashboard")
-        },
-        onError: (ctx) => {
-          console.log("Erro ao criar conta")
-          console.log(ctx)
-        }
-      }
-    )
+    //     },
+    //     onSuccess: (ctx) => {
+    //       console.log("Cadastrado", ctx)
+    //       router.replace("/dashboard")
+    //     },
+    //     onError: (ctx) => {
+    //       console.log("Erro ao criar conta")
+    //       console.log(ctx)
+    //     }
+    //   }
+    // )
 
   }
 
@@ -169,7 +171,26 @@ export function SignupForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <FormField
+          control={form.control}
+          name="course"
+          render={({ field }) => (
+            <FormItem className="w-full space-y-0">
+              <FormControl>
+                <select
+                  {...field}
+                  disabled={form.formState.isSubmitting}
+                  className="w-full rounded-full bg-gray-100 border-0 h-11 px-6 text-center text-sm text-gray-700 placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer appearance-none"
+                >
+                  <option value="ads">Análise e Desenvolvimento de Sistemas</option>
+                </select>
+              </FormControl>
+              <FormMessage className="text-xs text-center mt-1" />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={isLoading}>
           {form.formState.isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

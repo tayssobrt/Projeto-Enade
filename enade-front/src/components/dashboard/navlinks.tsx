@@ -1,47 +1,43 @@
-"use client";
+"use client"
 
-import Link from 'next/link';
-import {
-    UserGroupIcon,
-    DocumentDuplicateIcon,
-    DocumentChartBarIcon,
-} from '@heroicons/react/24/outline';
-
-import clsx from 'clsx';
-
-import { usePathname } from 'next/navigation';
-
-// Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import clsx from "clsx"
 
 const links = [
-    { name: 'Simulados', href: '/simulados', icon: DocumentDuplicateIcon },
-    { name: 'Perfil', href: '/perfil', icon: UserGroupIcon },
-];
-
+    { name: "Início", href: "/inicio" },
+    { name: "Simulado", href: "/simulados" },
+    { name: "Sobre", href: "/sobre" },
+]
 
 export default function NavLinks() {
-    const pathname = usePathname();
+    const pathname = usePathname()
+
     return (
         <>
             {links.map((link) => {
-                const LinkIcon = link.icon;
+                const isActive = pathname === link.href
+
                 return (
                     <Link
                         key={link.name}
                         href={link.href}
                         className={clsx(
-                            'flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3',
+                            "relative py-1 text-sm font-medium transition-colors hover:text-blue-200",
                             {
-                                'bg-sky-100 text-blue-600': pathname === link.href,
-                            },
+                                "text-white font-semibold": isActive,
+                                "text-gray-200": !isActive,
+                            }
                         )}
                     >
-                        <LinkIcon className="w-6" />
-                        <p className="hidden md:block">{link.name}</p>
+                        {link.name}
+                        {/* Linha indicadora de link ativo abaixo do texto */}
+                        {isActive && (
+                            <span className="absolute bottom-0 left-0 h-[2px] w-full rounded-full bg-white" />
+                        )}
                     </Link>
-                );
+                )
             })}
         </>
-    );
+    )
 }

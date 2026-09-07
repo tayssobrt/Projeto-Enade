@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { GoogleLogo } from "@phosphor-icons/react";
-import { authClient } from "@/lib/auth-client"
 
 
 const loginSchema = z.object({
@@ -35,35 +34,28 @@ export function LoginForm() {
   })
 
   async function onSubmit(formData: LoginFormValues) {
-    await authClient.signIn.email({
-      email: formData.email,
-      password: formData.password,
-      callbackURL: "/simulados"
-    },
-      {
-        onRequest: (ctx) => {
+    // await authClient.signIn.email({
+    //   email: formData.email,
+    //   password: formData.password,
+    //   callbackURL: "/simulados"
+    // },
+    //   {
+    //     onRequest: (ctx) => {
 
-        },
-        onSuccess: (ctx) => {
-          console.log("Logado", ctx)
-          router.replace("/simulados")
-        },
-        onError: (ctx) => {
-          console.log("Erro ao logar", ctx)
-          if (ctx.error.code === "INVALID_EMAIL_OR_PASSWORD") {
-            alert("Email ou senha incorretos")
-          }
-        }
-      }
-    )
+    //     },
+    //     onSuccess: (ctx) => {
+    //       console.log("Logado", ctx)
+    //       router.replace("/simulados")
+    //     },
+    //     onError: (ctx) => {
+    //       console.log("Erro ao logar", ctx)
+    //       if (ctx.error.code === "INVALID_EMAIL_OR_PASSWORD") {
+    //         alert("Email ou senha incorretos")
+    //       }
+    //     }
+    //   }
+    // )
 
-  }
-
-  const handleLoginWithGoogle = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/simulados"
-    })
   }
 
   return (
@@ -119,7 +111,7 @@ export function LoginForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -135,19 +127,10 @@ export function LoginForm() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
+            <span className="bg-background px-2 text-muted-foreground"></span>
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all duration-200rounded-xl shadow-sm hover:shadow-md font-medium"
-          onClick={handleLoginWithGoogle}
-        >
-          <GoogleLogo className="mr-2 h-4 w-4" />
-          Entrar com Google
-        </Button>
       </form>
     </Form>
   )
